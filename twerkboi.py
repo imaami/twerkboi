@@ -60,23 +60,23 @@ class TwerkBoi:
 			reply = self._inferkit.generate(prompt)
 
 			if reply == None:
-				return
+				reply = 'Unable to generate a reply'
+			else:
+				arr = []
+				for line in reply.splitlines():
+					line = line.strip()
+					if len(line) > 0:
+						m = TwerkBoi._bol_regex.match(line)
+						if m != None:
+							if m.group(1) != user.display_name:
+								break
+							span = m.span()[1]
+							if span >= len(line):
+								continue
+							line = line[span:]
+						arr.append(line)
+				reply='\n'.join(arr)
 
-			arr = []
-			for line in reply.splitlines():
-				line = line.strip()
-				if len(line) > 0:
-					m = TwerkBoi._bol_regex.match(line)
-					if m != None:
-						if m.group(1) != user.display_name:
-							break
-						span = m.span()[1]
-						if span >= len(line):
-							continue
-						line = line[span:]
-					arr.append(line)
-
-			reply='\n'.join(arr)
 			await msg.channel.send(reply)
 
 	def chan_msg_log(self, id: int):
