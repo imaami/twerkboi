@@ -54,6 +54,8 @@ class TwerkBoi:
 			if not mentioned:
 				return
 
+			await msg.channel.trigger_typing()
+
 			prompt = self.gen_prompt(msg_log, user.display_name)
 			reply = self._inferkit.generate(prompt)
 
