@@ -31,7 +31,10 @@ class TwerkBoi:
 		@self._discord.event
 		async def on_message(msg):
 			msg_log = self.chan_msg_log(msg.channel.id)
-			self.chan_append_msg(msg_log, msg)
+			if len(msg_log) == 0:
+				await self.chan_get_history(msg_log, msg.channel)
+			else:
+				self.chan_append_msg(msg_log, msg, TwerkBoi.list_tail(msg_log))
 
 			#guild = msg.guild
 			#if guild:
@@ -86,20 +89,26 @@ class TwerkBoi:
 	def chan_msg_log(self, id: int):
 		return self._channels.setdefault(id, [])
 
-	def chan_append_msg(self, msg_log: [], msg):
+	async def chan_get_history(self, msg_log: [], channel):
+		hist = await channel.history(limit=100).flatten()
+		prev_msg = TwerkBoi.list_tail(msg_log)
+		for i in range(len(hist)-1, -1, -1):
+			prev_msg = self.chan_append_msg(msg_log, hist[i], prev_msg)
+
+	def chan_append_msg(self, msg_log: [], msg, prev_msg = None):
 		author = msg.author
 		content = msg.content
 		clean_content = msg.clean_content
-		log_entry = TwerkBoi.list_tail(msg_log)
 
-		fmt_msg = '<' + author.display_name + '> ' + clean_content
-
-		if TwerkBoi.msg_author_id(log_entry) == author.id:
+		if TwerkBoi.msg_author_id(prev_msg) == author.id:
+			fmt_msg = clean_content
+			log_entry = prev_msg
 			log_entry['content'].append(content)
 			log_entry['clean_content'].append(clean_content)
 			log_entry['text'] += '\n' + fmt_msg
 		else:
-			msg_log.append({
+			fmt_msg = '<' + author.display_name + '> ' + clean_content
+			log_entry = {
 				'author': {
 					'id': author.id,
 					'display_name': author.display_name,
@@ -108,9 +117,11 @@ class TwerkBoi:
 				'content': [content],
 				'clean_content': [clean_content],
 				'text': fmt_msg
-			})
+			}
+			msg_log.append(log_entry)
 
 		log.debug(fmt_msg)
+		return log_entry
 
 	def msg_log_dump(self, msg_log: []):
 		text = ''
