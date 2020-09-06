@@ -5,7 +5,6 @@ import re
 
 class TwerkBoi:
 	#_id_regex = re.compile(r'<@!?(\d+)>')
-	_bol_regex = re.compile(r'<([^>]+)>\s*')
 
 	@staticmethod
 	def list_tail(arr: []):
@@ -26,7 +25,9 @@ class TwerkBoi:
 
 		@self._discord.event
 		async def on_ready():
-			log.info('Logged in as ' + log.green(str(self._discord.user), 1))
+			user = self._discord.user
+			self.name_regex = re.compile(r'(' + re.escape(user.display_name) + r')\]\s*')
+			log.info('Logged in as ' + log.green(str(user), 1))
 
 		@self._discord.event
 		async def on_message(msg):
@@ -69,19 +70,26 @@ class TwerkBoi:
 			if reply == None:
 				reply = 'Unable to generate a reply'
 			else:
-				arr = []
+				sanitized = []
 				for line in reply.splitlines():
 					line = line.strip()
 					if len(line) > 0:
-						m = TwerkBoi._bol_regex.match(line)
-						if m != None:
-							if m.group(1) != user.display_name:
-								break
-							span = m.span()[1]
-							if span >= len(line):
-								continue
-							line = line[span:]
-						arr.append(line)
+						sanitized.append(line)
+						#log.debug(line)
+				arr = []
+				for line in sanitized:
+					if line[0] == '[':
+						line = line[1:]
+						m = self.name_regex.match(line)
+						if m == None:
+							break
+						span = m.span()[1]
+						if span >= len(line):
+							continue
+						line = line[span:]
+					arr.append(line)
+				if len(arr) < 1:
+					return
 				reply='\n'.join(arr)
 
 			await msg.channel.send(reply)
@@ -107,7 +115,8 @@ class TwerkBoi:
 			log_entry['clean_content'].append(clean_content)
 			log_entry['text'] += '\n' + fmt_msg
 		else:
-			fmt_msg = '<' + author.display_name + '> ' + clean_content
+			fmt_msg = ('[' if prev_msg == None else '\n[') \
+			          + author.display_name + ']\n' + clean_content
 			log_entry = {
 				'author': {
 					'id': author.id,
@@ -131,7 +140,7 @@ class TwerkBoi:
 		return text
 
 	def gen_prompt(self, msg_log: [], display_name):
-		text = self.msg_log_dump(msg_log) + '<' + display_name + '>'
+		text = self.msg_log_dump(msg_log) + '\n[' + display_name + ']\n'
 		return text[-1000:]
 
 	def run(self):
