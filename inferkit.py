@@ -1,5 +1,6 @@
 import requests
 import simplejson
+import log
 
 class InferKit:
 	__URL_PREFIX = 'https://api.inferkit.com/v1/models/'
@@ -22,13 +23,13 @@ class InferKit:
 			r = requests.post(self.url, headers=self._headers, json=data)
 			r.raise_for_status()
 		except requests.exceptions.RequestException as e:
-			print('\x1b[1;31mRequestException: ' + str(e) + '\x1b[0m')
+			log.error('RequestException: ' + str(e))
 			return None
 
 		try:
 			reply = r.json()
 		except simplejson.errors.JSONDecodeError as e:
-			print('\x1b[1;31mJSONDecodeError: ' + str(e) + '\x1b[0m')
+			log.error('JSONDecodeError: ' + str(e))
 			return None
 
 		if ('data' in reply) and ('text' in reply['data']):

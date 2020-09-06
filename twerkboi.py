@@ -1,5 +1,6 @@
 from discord import Client as Discord
 from inferkit import InferKit
+import log
 import re
 
 class TwerkBoi:
@@ -25,7 +26,7 @@ class TwerkBoi:
 
 		@self._discord.event
 		async def on_ready():
-			print('Logged in as {0.user}'.format(self._discord))
+			log.info('Logged in as ' + log.green(str(self._discord.user), 1))
 
 		@self._discord.event
 		async def on_message(msg):
@@ -57,6 +58,9 @@ class TwerkBoi:
 			await msg.channel.trigger_typing()
 
 			prompt = self.gen_prompt(msg_log, user.display_name)
+			log.debug(log.white('<prompt>', 1) +
+			          log.yellow(prompt) +
+			          log.white('</prompt>', 1))
 			reply = self._inferkit.generate(prompt)
 
 			if reply == None:
@@ -106,7 +110,7 @@ class TwerkBoi:
 				'text': fmt_msg
 			})
 
-		print(fmt_msg)
+		log.debug(fmt_msg)
 
 	def msg_log_dump(self, msg_log: []):
 		text = ''
