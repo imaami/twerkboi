@@ -27,8 +27,17 @@ class TwerkBoi:
 
 		@self._discord.event
 		async def on_ready():
+			# Get member list sorted in reverse order by lower-case
+			# display name. This particular sorting choice ensures
+			# that a regex matching any member name will find the
+			# longest possible match in case of common prefixes.
+			def display_name_lc(m):
+				return m.display_name.lower()
+			members = list(self._discord.get_all_members())
+			members.sort(key=display_name_lc, reverse=True)
+
 			arr = []
-			for member in self._discord.get_all_members():
+			for member in members:
 				name = member.display_name
 				arr.append(re.escape(name))
 				# TODO: handle name collisions
