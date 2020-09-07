@@ -4,7 +4,7 @@ import log
 import re
 
 class TwerkBoi:
-	#_id_regex = re.compile(r'<@!?(\d+)>')
+	_cmd_regex = re.compile(r'!(say)(\s+(.*))?$')
 
 	@staticmethod
 	def list_tail(arr: []):
@@ -43,28 +43,34 @@ class TwerkBoi:
 				# TODO: handle name collisions
 				self._member_mention['@' + name.lower()] = member.mention
 			self._mention_regex = re.compile('@(' + '|'.join(arr) + ')', flags=re.I)
+
 			user = self._discord.user
 			self._name_regex = re.compile(r'(' + re.escape(user.display_name) + r')\]\s*', flags=re.I)
 			log.info('Logged in as ' + log.green(str(user), 1))
 
 		@self._discord.event
 		async def on_message(msg):
+			m = TwerkBoi._cmd_regex.match(msg.content)
+			if m != None:
+				cmd = getattr(self, '_cmd_' + m.group(1))
+				arg = m.group(3)
+			else:
+				cmd = None
+				arg = None
+
 			msg_log = self.chan_msg_log(msg.channel.id)
 			if len(msg_log) == 0:
 				await self.chan_get_history(msg_log, msg.channel)
 			else:
-				self.chan_append_msg(msg_log, msg, TwerkBoi.list_tail(msg_log))
-
-			#guild = msg.guild
-			#if guild:
-			#	for m in TwerkBoi._id_regex.finditer(msg.content):
-			#		member = guild.get_member(int(m.group(1)))
-			#		if member:
-			#			print(m.group(0) + ' -> ' + str(member))
+				self.chan_append_msg(msg_log, msg, (cmd != None), TwerkBoi.list_tail(msg_log))
 
 			user = self._discord.user
 
 			if msg.author == user:
+				return
+
+			if cmd != None:
+				await cmd(msg, arg)
 				return
 
 			user_id = user.id
@@ -90,10 +96,11 @@ class TwerkBoi:
 			else:
 				sanitized = []
 				for line in reply.splitlines():
-					line = line.strip()
-					if len(line) > 0:
-						sanitized.append(line)
-						#log.debug(line)
+					if (len(line) > 0) and not line.isspace():
+						sanitized.append(line.strip())
+				log.debug(log.white('<generated>', 1) +
+				          log.blue('\n'.join(sanitized), 1) +
+				          log.white('</generated>', 1))
 				arr = []
 				for line in sanitized:
 					if line[0] == '[':
@@ -128,29 +135,38 @@ class TwerkBoi:
 		hist = await channel.history(limit=100).flatten()
 		prev_msg = TwerkBoi.list_tail(msg_log)
 		for i in range(len(hist)-1, -1, -1):
-			prev_msg = self.chan_append_msg(msg_log, hist[i], prev_msg)
+			msg = hist[i]
+			is_cmd = (None != TwerkBoi._cmd_regex.match(msg.content))
+			prev_msg = self.chan_append_msg(msg_log, msg, is_cmd, prev_msg)
 
-	def chan_append_msg(self, msg_log: [], msg, prev_msg = None):
+	def chan_append_msg(self, msg_log: [], msg, is_cmd, prev_msg = None):
 		author = msg.author
-		content = msg.content
 		clean_content = msg.clean_content
+		same_author = (TwerkBoi.msg_author_id(prev_msg) == author.id)
 
-		if TwerkBoi.msg_author_id(prev_msg) == author.id:
+		if same_author:
 			fmt_msg = clean_content
-			log_entry = prev_msg
-			log_entry['content'].append(content)
-			log_entry['clean_content'].append(clean_content)
-			log_entry['text'] += '\n' + fmt_msg
 		else:
 			fmt_msg = ('[' if prev_msg == None else '\n[') \
 			          + author.display_name + ']\n' + clean_content
+
+		if is_cmd:
+			# Command message: don't log, print w/ different color
+			log_entry = prev_msg
+			fmt_msg = log.black(fmt_msg, 1)
+		elif same_author:
+			log_entry = prev_msg
+			log_entry['content'].append(msg.content)
+			log_entry['clean_content'].append(clean_content)
+			log_entry['text'] += '\n' + fmt_msg
+		else:
 			log_entry = {
 				'author': {
 					'id': author.id,
 					'display_name': author.display_name,
 					'name': author.name + '#' + author.discriminator
 				},
-				'content': [content],
+				'content': [msg.content],
 				'clean_content': [clean_content],
 				'text': fmt_msg
 			}
@@ -172,3 +188,16 @@ class TwerkBoi:
 
 	def run(self):
 		self._discord.run(self._discord_bot_token)
+
+	async def _cmd_say(self, msg, text):
+		await msg.channel.trigger_typing()
+		pos = 0
+		reply = ''
+		for m in self._mention_regex.finditer(text):
+			span = m.span()
+			mention = m.group(0)
+			reply += text[pos:span[0]] + \
+			         self._member_mention[mention.lower()]
+			pos = span[1]
+		reply += text[pos:len(text)]
+		await msg.channel.send(reply)
