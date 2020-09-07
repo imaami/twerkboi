@@ -31,8 +31,9 @@ class TwerkBoi:
 			for member in self._discord.get_all_members():
 				name = member.display_name
 				arr.append(re.escape(name))
-				self._member_mention['@' + name] = member.mention
-			self._mention_regex = re.compile('@(' + '|'.join(arr) + ')')
+				# TODO: handle name collisions
+				self._member_mention['@' + name.lower()] = member.mention
+			self._mention_regex = re.compile('@(' + '|'.join(arr) + ')', flags=re.I)
 			user = self._discord.user
 			self.name_regex = re.compile(r'(' + re.escape(user.display_name) + r')\]\s*')
 			log.info('Logged in as ' + log.green(str(user), 1))
@@ -105,7 +106,7 @@ class TwerkBoi:
 					span = m.span()
 					mention = m.group(0)
 					reply += tmp[pos:span[0]] + \
-					         self._member_mention[mention]
+					         self._member_mention[mention.lower()]
 					pos = span[1]
 				reply += tmp[pos:len(tmp)]
 
