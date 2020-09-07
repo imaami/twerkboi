@@ -1,5 +1,6 @@
 from discord import Client as Discord
 from inferkit import InferKit
+from cfg import Cfg
 import log
 import re
 
@@ -17,10 +18,18 @@ class TwerkBoi:
 			return msg['author']['id']
 		return None
 
-	def __init__(self, inferkit_api_key: str, discord_bot_token: str):
-		self._inferkit = InferKit(inferkit_api_key)
+	def __init__(self, cfg_file: str = None, \
+	             inferkit_api_key: str = None, \
+	             discord_bot_token: str = None):
+		try:
+			cfg = Cfg(cfg_file).data()
+		except:
+			cfg = { 'inferkit_api_key': inferkit_api_key,
+			        'discord_bot_token': discord_bot_token }
+
+		self._inferkit = InferKit(cfg['inferkit_api_key'])
 		self._discord = Discord()
-		self._discord_bot_token = discord_bot_token
+		self._discord_bot_token = cfg['discord_bot_token']
 		self._channels = {}
 		self._member_mention = {}
 		self._mention_regex = None
