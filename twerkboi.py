@@ -22,9 +22,17 @@ class TwerkBoi:
 		self._discord = Discord()
 		self._discord_bot_token = discord_bot_token
 		self._channels = {}
+		self._member_mention = {}
+		self._mention_regex = None
 
 		@self._discord.event
 		async def on_ready():
+			arr = []
+			for member in self._discord.get_all_members():
+				name = member.display_name
+				arr.append(re.escape(name))
+				self._member_mention['@' + name] = member.mention
+			self._mention_regex = re.compile('@(' + '|'.join(arr) + ')')
 			user = self._discord.user
 			self.name_regex = re.compile(r'(' + re.escape(user.display_name) + r')\]\s*')
 			log.info('Logged in as ' + log.green(str(user), 1))
@@ -90,7 +98,16 @@ class TwerkBoi:
 					arr.append(line)
 				if len(arr) < 1:
 					return
-				reply='\n'.join(arr)
+				tmp = '\n'.join(arr)
+				pos = 0
+				reply = ''
+				for m in self._mention_regex.finditer(tmp):
+					span = m.span()
+					mention = m.group(0)
+					reply += tmp[pos:span[0]] + \
+					         self._member_mention[mention]
+					pos = span[1]
+				reply += tmp[pos:len(tmp)]
 
 			await msg.channel.send(reply)
 
