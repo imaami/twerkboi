@@ -35,7 +35,7 @@ class TwerkBoi:
 				self._member_mention['@' + name.lower()] = member.mention
 			self._mention_regex = re.compile('@(' + '|'.join(arr) + ')', flags=re.I)
 			user = self._discord.user
-			self.name_regex = re.compile(r'(' + re.escape(user.display_name) + r')\]\s*')
+			self._name_regex = re.compile(r'(' + re.escape(user.display_name) + r')\]\s*', flags=re.I)
 			log.info('Logged in as ' + log.green(str(user), 1))
 
 		@self._discord.event
@@ -89,7 +89,7 @@ class TwerkBoi:
 				for line in sanitized:
 					if line[0] == '[':
 						line = line[1:]
-						m = self.name_regex.match(line)
+						m = self._name_regex.match(line)
 						if m == None:
 							break
 						span = m.span()[1]
