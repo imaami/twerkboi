@@ -128,11 +128,19 @@ class TwerkBoi:
 				tmp = '\n'.join(arr)
 				pos = 0
 				reply = ''
+				mentions_seen = {
+					'@' + user.display_name.lower(): True
+				}
 				for m in self._mention_regex.finditer(tmp):
 					span = m.span()
-					mention = self._member_mention[m.group(0).lower()]
-					reply += tmp[pos:span[0]] + mention
+					reply += tmp[pos:span[0]]
 					pos = span[1]
+					cleaned_mention = m.group(0).lower()
+					if cleaned_mention in mentions_seen:
+						continue
+					mentions_seen[cleaned_mention] = True
+					mention = self._member_mention[cleaned_mention]
+					reply += mention
 					if need_receiver_mention and (mention == receiver_mention):
 						need_receiver_mention = False
 				reply += tmp[pos:len(tmp)]
