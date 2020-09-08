@@ -4,6 +4,7 @@ import json
 class CfgBase(NamedTuple):
 	inferkit_api_key: str = ''
 	discord_bot_token: str = ''
+	auto_mention: bool = False
 
 class Cfg(CfgBase):
 	def __new__(cls, cfg_file: str = None, **kwargs):

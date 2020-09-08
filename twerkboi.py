@@ -115,18 +115,33 @@ class TwerkBoi:
 							continue
 						line = line[span:]
 					arr.append(line)
-				if len(arr) < 1:
-					return
+
+				if self._cfg.auto_mention:
+					need_receiver_mention = True
+					receiver_mention = msg.author.mention
+				else:
+					if len(arr) < 1:
+						return
+					need_receiver_mention = False
+					receiver_mention = None
+
 				tmp = '\n'.join(arr)
 				pos = 0
 				reply = ''
 				for m in self._mention_regex.finditer(tmp):
 					span = m.span()
-					mention = m.group(0)
-					reply += tmp[pos:span[0]] + \
-					         self._member_mention[mention.lower()]
+					mention = self._member_mention[m.group(0).lower()]
+					reply += tmp[pos:span[0]] + mention
 					pos = span[1]
+					if need_receiver_mention and (mention == receiver_mention):
+						need_receiver_mention = False
 				reply += tmp[pos:len(tmp)]
+
+				if need_receiver_mention:
+					if len(reply) > 0:
+						reply = receiver_mention + ' ' + reply
+					else:
+						reply = receiver_mention
 
 			await msg.channel.send(reply)
 
