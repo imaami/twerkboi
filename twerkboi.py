@@ -18,18 +18,11 @@ class TwerkBoi:
 			return msg['author']['id']
 		return None
 
-	def __init__(self, cfg_file: str = None, \
-	             inferkit_api_key: str = None, \
-	             discord_bot_token: str = None):
-		try:
-			cfg = Cfg(cfg_file).data()
-		except:
-			cfg = { 'inferkit_api_key': inferkit_api_key,
-			        'discord_bot_token': discord_bot_token }
+	def __init__(self, cfg_file: str = None, **kwargs):
 
-		self._inferkit = InferKit(cfg['inferkit_api_key'])
+		self._cfg = Cfg(cfg_file, **kwargs)
 		self._discord = Discord()
-		self._discord_bot_token = cfg['discord_bot_token']
+		self._inferkit = InferKit(self._cfg.inferkit_api_key)
 		self._channels = {}
 		self._member_mention = {}
 		self._mention_regex = None
@@ -196,7 +189,7 @@ class TwerkBoi:
 		return text[-1000:]
 
 	def run(self):
-		self._discord.run(self._discord_bot_token)
+		self._discord.run(self._cfg.discord_bot_token)
 
 	async def _cmd_say(self, msg, text):
 		await msg.channel.trigger_typing()

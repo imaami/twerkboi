@@ -1,9 +1,18 @@
-import simplejson as json
+from typing import NamedTuple
+import json
 
-class Cfg:
-	def __init__(self, cfg_file: str):
-		with open(cfg_file, 'r') as fp:
-			self._data = json.load(fp)
+class CfgBase(NamedTuple):
+	inferkit_api_key: str = ''
+	discord_bot_token: str = ''
 
-	def data(self):
-		return self._data
+class Cfg(CfgBase):
+	def __new__(cls, cfg_file: str = None, **kwargs):
+		try:
+			with open(cfg_file, 'r') as fp:
+				d = json.load(fp)
+			d.update(**kwargs)
+		except:
+			d = dict(**kwargs)
+		self = super().__new__(cls, **d)
+		self.file = cfg_file
+		return self
