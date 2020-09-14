@@ -1,12 +1,11 @@
-from discord import Client as Discord
+from discord.ext import commands
 from inferkit import InferKit
 from cfg import Cfg
+from gear import Gear
 import log
 import re
 
 class TwerkBoi:
-	_cmd_regex = re.compile(r'!(say)(\s+(.*))?$')
-
 	@staticmethod
 	def list_tail(arr: []):
 		return arr[-1] if (len(arr) > 0) else None
@@ -18,14 +17,24 @@ class TwerkBoi:
 			return msg['author']['id']
 		return None
 
+	def get_command_prefix(self):
+		return self._cfg.command_prefix
+
+	def _is_cmd(self, msg):
+		return (None != self._cmd_regex.match(msg.content))
+
 	def __init__(self, cfg_file: str = None, **kwargs):
 
 		self._cfg = Cfg(cfg_file, **kwargs)
-		self._discord = Discord()
+		self._discord = commands.Bot(self._cfg.command_prefix)
 		self._inferkit = InferKit(self._cfg.inferkit_api_key)
 		self._channels = {}
 		self._member_mention = {}
 		self._mention_regex = None
+
+		self._discord.add_cog(Gear(self))
+		cog = self._discord.get_cog('Gear')
+		self._cmd_regex = cog.compile_regex()
 
 		@self._discord.event
 		async def on_ready():
@@ -52,27 +61,21 @@ class TwerkBoi:
 
 		@self._discord.event
 		async def on_message(msg):
-			m = TwerkBoi._cmd_regex.match(msg.content)
-			if m != None:
-				cmd = getattr(self, '_cmd_' + m.group(1))
-				arg = m.group(3)
-			else:
-				cmd = None
-				arg = None
+			await self._discord.process_commands(msg)
+			is_cmd = self._is_cmd(msg)
 
 			msg_log = self.chan_msg_log(msg.channel.id)
 			if len(msg_log) == 0:
 				await self.chan_get_history(msg_log, msg.channel)
 			else:
-				self.chan_append_msg(msg_log, msg, (cmd != None), TwerkBoi.list_tail(msg_log))
+				self.chan_append_msg(msg_log, msg, is_cmd, TwerkBoi.list_tail(msg_log))
 
 			user = self._discord.user
 
 			if msg.author == user:
 				return
 
-			if cmd != None:
-				await cmd(msg, arg)
+			if is_cmd:
 				return
 
 			user_id = user.id
@@ -161,8 +164,7 @@ class TwerkBoi:
 		prev_msg = TwerkBoi.list_tail(msg_log)
 		for i in range(len(hist)-1, -1, -1):
 			msg = hist[i]
-			is_cmd = (None != TwerkBoi._cmd_regex.match(msg.content))
-			prev_msg = self.chan_append_msg(msg_log, msg, is_cmd, prev_msg)
+			prev_msg = self.chan_append_msg(msg_log, msg, self._is_cmd(msg), prev_msg)
 
 	def chan_append_msg(self, msg_log: [], msg, is_cmd, prev_msg = None):
 		author = msg.author
@@ -213,16 +215,3 @@ class TwerkBoi:
 
 	def run(self):
 		self._discord.run(self._cfg.discord_bot_token)
-
-	async def _cmd_say(self, msg, text):
-		await msg.channel.trigger_typing()
-		pos = 0
-		reply = ''
-		for m in self._mention_regex.finditer(text):
-			span = m.span()
-			mention = m.group(0)
-			reply += text[pos:span[0]] + \
-			         self._member_mention[mention.lower()]
-			pos = span[1]
-		reply += text[pos:len(text)]
-		await msg.channel.send(reply)
