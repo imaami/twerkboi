@@ -13,7 +13,7 @@ class Cfg(CfgBase):
 			with open(cfg_file, 'r') as fp:
 				d = json.load(fp)
 			d.update(**kwargs)
-		except:
+		except Exception as e:
 			d = dict(**kwargs)
 		self = super().__new__(cls, **d)
 		self.file = cfg_file

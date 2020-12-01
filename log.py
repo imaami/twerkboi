@@ -20,10 +20,10 @@ def magenta(s, bright: int = 0): return color.magenta[bright] + s + color.reset
 def cyan(s, bright: int = 0): return color.cyan[bright] + s + color.reset
 def white(s, bright: int = 0): return color.white[bright] + s + color.reset
 
-def stdout(s): print(s, file=sys.stdout)
-def stderr(s): print(s, file=sys.stderr)
+def stdout(s, **kwargs): print(s, file=sys.stdout, **kwargs)
+def stderr(s, **kwargs): print(s, file=sys.stderr, **kwargs)
 
-def debug(s): stderr(cyan(s))
-def info(s): stderr(cyan(s, 1))
-def warn(s): stderr(yellow(s, 1))
-def error(s): stderr(red(s, 1))
+def debug(s, **kwargs): stderr(cyan(s), **kwargs)
+def info(s, **kwargs): stderr(cyan(s, 1), **kwargs)
+def warn(s, **kwargs): stderr(yellow(s, 1), **kwargs)
+def error(s, **kwargs): stderr(red(s, 1), **kwargs)

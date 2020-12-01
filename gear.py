@@ -7,19 +7,24 @@ class Gear(commands.Cog):
 		self.dad = dad
 
 	@commands.command()
+	async def err(self, ctx):
+		pass
+
+	@commands.command()
+	async def gen(self, ctx):
+		pass
+
+	@commands.command()
 	async def say(self, ctx, *, arg):
 		chan = ctx.message.channel
 		await chan.trigger_typing()
-		pos = 0
-		reply = ''
-		for m in self.dad._mention_regex.finditer(arg):
-			span = m.span()
-			mention = m.group(0)
-			reply += arg[pos:span[0]] + \
-			         self.dad._member_mention[mention.lower()]
-			pos = span[1]
-		reply += arg[pos:len(arg)]
+		reply = self.dad.sanitize_mentions(arg, keep_redundant = True,
+		                                   keep_unknown = True)['text']
 		await chan.send(reply)
+
+	@commands.command()
+	async def tts(self, ctx):
+		pass
 
 	def compile_regex(self):
 		arr = self.get_commands()

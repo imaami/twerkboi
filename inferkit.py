@@ -16,6 +16,8 @@ class InferKit:
 				'text': prompt,
 				'isContinuation': True
 			},
+			'temperature': 0.9,
+			'topP': 0.99,
 			'length': length
 		}
 
